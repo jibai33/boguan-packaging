@@ -11,7 +11,7 @@
  */
 import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, createReadStream } from 'node:fs';
 import { resolve, sep, extname, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -33,7 +33,7 @@ const PUBLIC_FILES = new Set([
   '/index.html', '/admin.html', '/styles.css', '/main.js', '/admin.css', '/admin.js',
   '/favicon.ico', '/robots.txt', '/site.webmanifest', '/.nojekyll',
 ]);
-const ASSET_RE = /^\/assets\/[\w.-]+\.(webp|png|jpe?g|gif|ico|svg)$/i;
+const ASSET_RE = /^\/assets\/(?:[\w.-]+\/)?[\w.-]+\.(webp|png|jpe?g|gif|ico|svg|mp4|webm)$/i;
 
 function isPublicPath(pathname) {
   return PUBLIC_FILES.has(pathname) || ASSET_RE.test(pathname);
@@ -51,6 +51,8 @@ const MIME = {
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
   '.txt': 'text/plain; charset=utf-8',
 };
 
@@ -212,7 +214,9 @@ export async function createApp(options = {}) {
       const need = str(body.need, 1000);
       if (!contact) return sendJson(res, 400, { error: '请填写联系方式（电话或邮箱）' });
       if (contact.length < 3) return sendJson(res, 400, { error: '联系方式格式不正确' });
-      if (!/^[\w.@+\-\s()（）]{3,120}$/.test(contact)) {
+      // 只挡控制字符与尖括号（安全），不苛求格式——中文备注、国际号码、
+      // 带空格的企业邮箱都应放行；具体是不是有效联系方式由前端提示。
+      if (!/^[^\u0000-\u001f\u007f<>]{3,120}$/.test(contact)) {
         return sendJson(res, 400, { error: '联系方式格式不正确' });
       }
       const row = createInquiry(db, {
@@ -333,11 +337,55 @@ export async function createApp(options = {}) {
     try {
       const info = await stat(filePath);
       if (!info.isFile()) return sendJson(res, 404, { error: 'Not Found' });
+      const ext = extname(filePath).toLowerCase();
+      // HTML/JS/CSS 用 no-cache + ETag：改完代码刷新即生效，
+      // 内容没变时浏览器带 If-None-Match 拿到 304，不产生实际传输。
+      // 图片这类内容稳定的资源才走长缓存。
+      const isCode = ext === '.html' || ext === '.js' || ext === '.css';
+      const etag = `"${info.size.toString(16)}-${Math.floor(info.mtimeMs).toString(16)}"`;
+      const cacheControl = isCode ? 'no-cache' : 'public, max-age=86400';
+
+      if (req.headers['if-none-match'] === etag) {
+        res.writeHead(304, { ETag: etag, 'Cache-Control': cacheControl });
+        return res.end();
+      }
+
+      const contentType = MIME[ext] || 'application/octet-stream';
+
+      // Range 支持：没有它，31MB 的视频无法拖动进度条，每次 seek 都要重下整段。
+      const range = req.headers.range;
+      if (range) {
+        const m = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+        if (m) {
+          const size = info.size;
+          let start = m[1] === '' ? 0 : Number(m[1]);
+          let end = m[2] === '' ? size - 1 : Number(m[2]);
+          if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) {
+            res.writeHead(416, { 'Content-Range': `bytes */${size}` });
+            return res.end();
+          }
+          end = Math.min(end, size - 1);
+          res.writeHead(206, {
+            'Content-Type': contentType,
+            'Content-Length': end - start + 1,
+            'Content-Range': `bytes ${start}-${end}/${size}`,
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': cacheControl,
+            'ETag': etag,
+            'X-Content-Type-Options': 'nosniff',
+          });
+          if (req.method === 'HEAD') return res.end();
+          return createReadStream(filePath, { start, end }).pipe(res);
+        }
+      }
+
       const data = await readFile(filePath);
       res.writeHead(200, {
-        'Content-Type': MIME[extname(filePath).toLowerCase()] || 'application/octet-stream',
+        'Content-Type': contentType,
         'Content-Length': data.length,
-        'Cache-Control': extname(filePath) === '.html' ? 'no-cache' : 'public, max-age=3600',
+        'Cache-Control': cacheControl,
+        'ETag': etag,
+        'Accept-Ranges': 'bytes',
         'X-Content-Type-Options': 'nosniff',
       });
       return res.end(req.method === 'HEAD' ? undefined : data);

@@ -234,3 +234,42 @@ test('端口监听成功前不写入密码', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+/* ---------------- 静态资源缓存（回归：旧 JS 被缓存导致"改了不生效"） ---------------- */
+test('JS/CSS 返回 no-cache 且支持 ETag 304', async () => {
+  const r1 = await api('/main.js', { auth: false });
+  assert.equal(r1.status, 200);
+  assert.match(r1.headers.get('cache-control') || '', /no-cache/);
+  const etag = r1.headers.get('etag');
+  assert.ok(etag, '应返回 ETag');
+
+  const r2 = await fetch(`${base}/main.js`, { headers: { 'If-None-Match': etag } });
+  assert.equal(r2.status, 304, '内容未变时应返回 304');
+
+  const img = await api('/assets/hero-box.webp', { auth: false });
+  assert.equal(img.status, 200);
+  assert.match(img.headers.get('cache-control') || '', /max-age=\d+/);
+});
+
+/* ---------------- 视频分段传输（回归：无 Range 时 31MB 视频无法拖动进度条） ---------------- */
+test('视频资源支持 Range 请求并返回 206', async () => {
+  const head = await fetch(`${base}/assets/video/brand-720.mp4`, { method: 'HEAD' });
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('accept-ranges'), 'bytes');
+  assert.equal(head.headers.get('content-type'), 'video/mp4');
+
+  const part = await fetch(`${base}/assets/video/brand-720.mp4`, {
+    headers: { Range: 'bytes=0-1023' },
+  });
+  assert.equal(part.status, 206, '应返回 206 Partial Content');
+  assert.match(part.headers.get('content-range'), /^bytes 0-1023\/\d+$/);
+  const buf = Buffer.from(await part.arrayBuffer());
+  assert.equal(buf.length, 1024);
+});
+
+test('越界的 Range 返回 416', async () => {
+  const res = await fetch(`${base}/assets/video/brand-720.mp4`, {
+    headers: { Range: 'bytes=99999999999-' },
+  });
+  assert.equal(res.status, 416);
+});
