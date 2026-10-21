@@ -38,12 +38,15 @@ git push -u origin main
 
 站点地址：`https://<你的用户名>.github.io/<仓库名>/`
 
-### 部署后需要改一处
+### 部署前替换占位符
 
-`index.html` 里的 `og:image` 目前是相对路径，社交分享场景要求绝对 URL：
+`index.html` 的 `og:image` 已写成绝对 URL 形式，但域名里留了占位符 `YOUR_USERNAME`。
+社交平台（微信、Twitter/X、Slack）抓取分享图时只认绝对地址，相对路径会失效：
 
-```html
-<meta property="og:image" content="https://<你的用户名>.github.io/<仓库名>/assets/hero-box.png">
+```bash
+# 把 YOUR_USERNAME 换成你的 GitHub 用户名（macOS 的 sed 需要 -i ''）
+sed -i '' 's/YOUR_USERNAME/你的GitHub用户名/' index.html
+git commit -am "chore: og:image 指向正式域名" && git push
 ```
 
 ## 关于图片格式
