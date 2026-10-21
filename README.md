@@ -2,8 +2,8 @@
 
 宁晋县博冠纸制品包装有限公司的品牌展示页。单页、零依赖、纯静态，托管在 GitHub Pages。
 
-- 仓库：https://github.com/jibai33/oguan-packaging
-- 线上地址：https://jibai33.github.io/oguan-packaging/
+- 仓库：https://github.com/jibai33/boguan-packaging
+- 线上地址：https://jibai33.github.io/boguan-packaging/
 
 参考 apple.com.cn 首页的内容节奏（全幅 hero + 2×2 瓦片网格），借鉴了 GitHub 开源复刻项目
 [`iamreiyn/apple-website-clone`](https://github.com/iamreiyn/apple-website-clone) 的分段模型
@@ -40,12 +40,12 @@ git push -u origin main
 推送后在仓库 **Settings → Pages** 里把 Source 设为 `Deploy from a branch`，
 分支 `main`、目录 `/ (root)`，保存后 1–2 分钟生效。
 
-### 仓库改名后的连带修改
+### 仓库再改名时
 
 `index.html` 里的 `og:url` 与 `og:image` 写死了当前域名，仓库改名后需要同步：
 
 ```bash
-sed -i '' 's/oguan-packaging/新仓库名/g' index.html
+sed -i '' 's/boguan-packaging/新仓库名/g' index.html
 git commit -am "chore: 同步仓库改名后的 og 地址" && git push
 ```
 
