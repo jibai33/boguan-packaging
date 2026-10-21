@@ -1,6 +1,9 @@
 # 博冠包装 · 官网（静态站点）
 
-宁晋县博冠纸制品包装有限公司的品牌展示页。单页、零依赖、纯静态，可直接托管在 GitHub Pages。
+宁晋县博冠纸制品包装有限公司的品牌展示页。单页、零依赖、纯静态，托管在 GitHub Pages。
+
+- 仓库：https://github.com/jibai33/oguan-packaging
+- 线上地址：https://jibai33.github.io/oguan-packaging/
 
 参考 apple.com.cn 首页的内容节奏（全幅 hero + 2×2 瓦片网格），借鉴了 GitHub 开源复刻项目
 [`iamreiyn/apple-website-clone`](https://github.com/iamreiyn/apple-website-clone) 的分段模型
@@ -26,28 +29,27 @@ python3 -m http.server 8765
 
 或直接 `open index.html`。
 
-## 部署到 GitHub Pages
+## 部署
+
+远程已关联，首次推送：
 
 ```bash
-# 1. 在 GitHub 上新建一个空仓库（不要勾选 README），得到仓库地址
-# 2. 关联并推送
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
 git push -u origin main
-# 3. 仓库 Settings → Pages → Source 选 "Deploy from a branch"，分支 main，目录 / (root)
 ```
 
-站点地址：`https://<你的用户名>.github.io/<仓库名>/`
+推送后在仓库 **Settings → Pages** 里把 Source 设为 `Deploy from a branch`，
+分支 `main`、目录 `/ (root)`，保存后 1–2 分钟生效。
 
-### 部署前替换占位符
+### 仓库改名后的连带修改
 
-`index.html` 的 `og:image` 已写成绝对 URL 形式，但域名里留了占位符 `YOUR_USERNAME`。
-社交平台（微信、Twitter/X、Slack）抓取分享图时只认绝对地址，相对路径会失效：
+`index.html` 里的 `og:url` 与 `og:image` 写死了当前域名，仓库改名后需要同步：
 
 ```bash
-# 把 YOUR_USERNAME 换成你的 GitHub 用户名（macOS 的 sed 需要 -i ''）
-sed -i '' 's/YOUR_USERNAME/你的GitHub用户名/' index.html
-git commit -am "chore: og:image 指向正式域名" && git push
+sed -i '' 's/oguan-packaging/新仓库名/g' index.html
+git commit -am "chore: 同步仓库改名后的 og 地址" && git push
 ```
+
+社交平台（微信、Twitter/X、Slack）抓取分享图时只认绝对地址，相对路径会失效。
 
 ## 关于图片格式
 
