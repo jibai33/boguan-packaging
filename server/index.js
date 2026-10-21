@@ -140,18 +140,17 @@ export async function createApp(options = {}) {
   }
   const tokenizer = createTokenizer(secret);
 
-  // 密码优先级：显式传入 > 环境变量（仅首次）> 数据库已有 > 随机生成
+  // 密码优先级：显式参数 / 环境变量（每次都覆盖，作为重置手段）> 数据库已有 > 随机生成
   let generatedPassword = null;
-  if (adminPassword) {
-    setSetting(db, 'admin_password', hashPassword(adminPassword));
+  let passwordSource = 'existing';
+  const explicitPassword = adminPassword || process.env.ADMIN_PASSWORD;
+  if (explicitPassword) {
+    setSetting(db, 'admin_password', hashPassword(explicitPassword));
+    passwordSource = 'explicit';
   } else if (!getSetting(db, 'admin_password')) {
-    const fromEnv = process.env.ADMIN_PASSWORD;
-    if (fromEnv) {
-      setSetting(db, 'admin_password', hashPassword(fromEnv));
-    } else {
-      generatedPassword = randomBytes(9).toString('base64url');
-      setSetting(db, 'admin_password', hashPassword(generatedPassword));
-    }
+    generatedPassword = randomBytes(9).toString('base64url');
+    setSetting(db, 'admin_password', hashPassword(generatedPassword));
+    passwordSource = 'generated';
   }
 
   const submitLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
@@ -368,23 +367,26 @@ export async function createApp(options = {}) {
     }
   });
 
-  return { server, db, tokenizer, generatedPassword };
+  return { server, db, tokenizer, generatedPassword, passwordSource };
 }
 
 /* ---------------- 直接运行 ---------------- */
 const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 if (isMain) {
   const port = Number.parseInt(process.env.PORT || '3000', 10);
-  const { server, generatedPassword } = await createApp();
+  const { server, generatedPassword, passwordSource } = await createApp();
   server.listen(port, () => {
     console.log(`\n  博冠包装服务已启动`);
     console.log(`  官网      http://localhost:${port}/`);
     console.log(`  后台      http://localhost:${port}/admin.html`);
     if (generatedPassword) {
       console.log(`\n  已生成后台初始密码：${generatedPassword}`);
-      console.log(`  （仅显示一次，请立即保存；也可用 ADMIN_PASSWORD 环境变量重置）\n`);
+      console.log(`  仅显示这一次，请立即保存。忘了可用 ADMIN_PASSWORD=新密码 npm start 重置。\n`);
+    } else if (passwordSource === 'explicit') {
+      console.log(`  后台密码：已按 ADMIN_PASSWORD 设为你这次传入的值\n`);
     } else {
-      console.log(`  后台密码：环境变量 ADMIN_PASSWORD 或首次生成的值\n`);
+      console.log(`  后台密码：沿用数据库中已有的密码`);
+      console.log(`  忘了密码就执行：ADMIN_PASSWORD=新密码 npm start\n`);
     }
   });
 }

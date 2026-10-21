@@ -60,7 +60,13 @@ npm start                              # 默认 3000 端口
 ADMIN_PASSWORD=你的密码 PORT=3000 npm start
 ```
 
-首次启动若没设 `ADMIN_PASSWORD`，会生成随机密码并打印到控制台（只显示一次）。
+密码规则：
+
+| 启动方式 | 结果 |
+|---|---|
+| `ADMIN_PASSWORD=xxx npm start` | **每次都把密码重置为 xxx**（忘记密码就用这条） |
+| 不设环境变量、库里已有密码 | 沿用原密码，启动日志会提示 |
+| 不设环境变量、库里没有密码 | 生成随机密码并打印一次 |
 
 - 官网 <http://localhost:3000/>
 - 后台 <http://localhost:3000/admin.html>
