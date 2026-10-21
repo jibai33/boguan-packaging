@@ -141,15 +141,18 @@ export async function createApp(options = {}) {
   const tokenizer = createTokenizer(secret);
 
   // 密码优先级：显式参数 / 环境变量（每次都覆盖，作为重置手段）> 数据库已有 > 随机生成
+  // 注意：这里只决定"待写入什么密码"，真正的落盘推迟到端口监听成功之后，
+  // 避免端口被占用导致启动失败、却已经悄悄改了密码。
   let generatedPassword = null;
   let passwordSource = 'existing';
+  let pendingPassword = null;
   const explicitPassword = adminPassword || process.env.ADMIN_PASSWORD;
   if (explicitPassword) {
-    setSetting(db, 'admin_password', hashPassword(explicitPassword));
+    pendingPassword = explicitPassword;
     passwordSource = 'explicit';
   } else if (!getSetting(db, 'admin_password')) {
     generatedPassword = randomBytes(9).toString('base64url');
-    setSetting(db, 'admin_password', hashPassword(generatedPassword));
+    pendingPassword = generatedPassword;
     passwordSource = 'generated';
   }
 
@@ -364,6 +367,15 @@ export async function createApp(options = {}) {
       } else {
         res.end();
       }
+    }
+  });
+
+  // 端口真正监听成功后才落盘密码。若 listen 抛 EADDRINUSE，
+  // 'listening' 不会触发，数据库保持原样——不会出现"启动失败但密码已被改"。
+  server.once('listening', () => {
+    if (pendingPassword) {
+      setSetting(db, 'admin_password', hashPassword(pendingPassword));
+      pendingPassword = null;
     }
   });
 

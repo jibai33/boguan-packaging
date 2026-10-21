@@ -214,3 +214,23 @@ test('登出后原 token 不可用', async () => {
   assert.equal(r.status, 401);
   token = saved;
 });
+
+/* ---------------- 启动失败不应留下副作用（回归：EADDRINUSE 后密码被改） ---------------- */
+test('端口监听成功前不写入密码', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bg-defer-'));
+  try {
+    const app = await createApp({ dataDir: dir, adminPassword: 'deferred-pw' });
+    const before = app.db.prepare("SELECT value FROM settings WHERE key = 'admin_password'").get();
+    assert.equal(before, undefined, 'listen 之前不应写入密码');
+    app.db.close();
+
+    const app2 = await createApp({ dataDir: dir, adminPassword: 'deferred-pw' });
+    await new Promise((r) => app2.server.listen(0, '127.0.0.1', r));
+    const after = app2.db.prepare("SELECT value FROM settings WHERE key = 'admin_password'").get();
+    assert.ok(after && after.value.startsWith('scrypt$'), 'listen 成功后应写入哈希');
+    await new Promise((r) => app2.server.close(r));
+    app2.db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
