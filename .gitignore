@@ -17,3 +17,6 @@ docs/*.mp3
 .vscode/
 .idea/
 *.swp
+
+# 误命名为 .md 的音频文件，会让 Jekyll 构建失败
+AGENTS.md
