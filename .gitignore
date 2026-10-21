@@ -1,0 +1,11 @@
+# 工具运行时数据，不入库
+.rivet/
+
+# macOS
+.DS_Store
+._*
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
