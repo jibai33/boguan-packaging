@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createApp } from '../server/index.js';
+import { createApp } from '../index.js';
 
 const PASSWORD = 'testpass123';
 let server, base, dataDir, token;

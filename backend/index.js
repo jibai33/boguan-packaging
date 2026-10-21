@@ -2,7 +2,7 @@
  * 博冠包装 —— 零依赖 Node 服务
  * HTTP 路由 + 静态文件 + 鉴权中间件 + 限流，全部基于 node: 内置模块。
  *
- * 启动：node server/index.js
+ * 启动：node backend/index.js（或 npm start）
  * 环境变量：
  *   PORT             监听端口（默认 3000）
  *   ADMIN_PASSWORD   后台密码（首次启动时写入，之后以数据库为准）
@@ -25,7 +25,8 @@ import {
 import { hashPassword, verifyPassword, createTokenizer } from './auth.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, '..');
+const ROOT = resolve(HERE, '..');            // 项目根：data/ 与文档
+const FRONTEND = resolve(ROOT, 'frontend');  // 静态资源根：index.html / admin.html / assets
 
 /* ---------------- 静态文件白名单 ---------------- */
 // 只服务站点自身需要的文件，其余（package.json / server / tests / data）一律 404。
@@ -330,8 +331,8 @@ export async function createApp(options = {}) {
     if (pathname.includes('\0') || pathname.includes('..') || !isPublicPath(pathname)) {
       return sendJson(res, 404, { error: 'Not Found' });
     }
-    const filePath = resolve(ROOT, '.' + pathname);
-    if (filePath !== ROOT && !filePath.startsWith(ROOT + sep)) {
+    const filePath = resolve(FRONTEND, '.' + pathname);
+    if (filePath !== FRONTEND && !filePath.startsWith(FRONTEND + sep)) {
       return sendJson(res, 403, { error: 'Forbidden' });
     }
     try {

@@ -14,7 +14,7 @@ import os
 import random
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "assets")
 os.makedirs(OUT, exist_ok=True)
 
 SS = 2  # 超采样倍率，用于抗锯齿

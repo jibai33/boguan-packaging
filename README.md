@@ -13,12 +13,26 @@
 ## 结构
 
 ```
-index.html          单页结构（hero / 产品瓦片 / 设备 / 工艺 / 资质 / 询价 / 页脚）
-styles.css          设计系统与响应式（1440 / 1068 / 834 / 734 断点）
-main.js             交互层：滚动揭示、数字计数、移动抽屉、表单校验、指针视差、搜索
-assets/             位图资产（webp 主 + png 回退），全部本地生成，无外链
-tools/gen_assets.py 资产生成器（Pillow 程序化渲染等距纸箱、瓦楞截面、印刷版面）
+frontend/                  纯静态站点，可单独部署到任何静态托管
+  index.html               官网单页（hero / 产品瓦片 / 设备 / 工艺 / 资质 / 询价 / 页脚）
+  styles.css               设计系统与响应式（1440 / 1068 / 834 / 734 断点）
+  main.js                  交互层：滚动揭示、数字计数、抽屉、表单、视差、搜索
+  admin.html / .css / .js  管理后台（登录 / 概览 / 询价 / 产品）
+  assets/                  位图与视频（webp 主 + png/jpg 回退），本地生成，无外链
+  .nojekyll                跳过 GitHub Pages 的 Jekyll 处理
+
+backend/                   Node 零依赖服务
+  index.js                 路由 / 静态文件白名单 / 鉴权 / 限流 / HTTP Range
+  db.js                    SQLite（node:sqlite）：inquiries / products / settings / revoked_tokens
+  auth.js                  scrypt 存密码，HMAC-SHA256 签发 token
+  tests/api.test.js        25 项集成测试（真实 HTTP + 真实 SQLite）
+
+tools/gen_assets.py        资产生成器（Pillow 程序化渲染）
+data/                      SQLite 运行时数据（不入库）
+docs/                      设计文档与视频素材（不入库）
 ```
+
+服务端只把 `frontend/` 暴露出去，`backend/`、`docs/`、`data/`、`package.json` 一律 404。
 
 ## 本地预览
 
@@ -72,11 +86,11 @@ ADMIN_PASSWORD=你的密码 PORT=3000 npm start
 - 后台 <http://localhost:3000/admin.html>
 
 ```
-server/index.js    路由、静态文件白名单、鉴权中间件、限流
-server/db.js       SQLite（node:sqlite）：inquiries / products / settings / revoked_tokens
-server/auth.js     scrypt 存密码，HMAC-SHA256 签发 token（12 小时，登出即吊销）
-admin.html         后台：登录、概览、询价列表、产品管理
-tests/api.test.js  21 项集成测试，跑真实 HTTP + 真实 SQLite，不 mock
+backend/index.js   路由、静态文件白名单、鉴权中间件、限流、Range
+backend/db.js      SQLite（node:sqlite）：inquiries / products / settings / revoked_tokens
+backend/auth.js    scrypt 存密码，HMAC-SHA256 签发 token（12 小时，登出即吊销）
+frontend/admin.*   后台：登录、概览、询价列表、产品管理
+backend/tests/     25 项集成测试，跑真实 HTTP + 真实 SQLite，不 mock
 ```
 
 ### 接口
