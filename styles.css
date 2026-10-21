@@ -12,7 +12,7 @@
   --ink-2:      #6e6e73;
   --ink-3:      #8e8e93;
   --paper:      #fbfaf7;
-  --paper-2:    #f3efe7;
+  --paper-2:    #f5f2eb;
   --paper-3:    #ece6da;
   --kraft:      #a8763f;
   --kraft-2:    #c19a67;
@@ -385,8 +385,6 @@ button { background: none; border: 0; cursor: pointer; }
   height: auto;
   object-fit: contain;
   transition: transform 1.1s var(--ease);
-  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
-          mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
 }
 .tile:hover .tile__media img { transform: scale(1.03) translateY(-4px); }
 
@@ -443,7 +441,7 @@ button { background: none; border: 0; cursor: pointer; }
   margin-top: 14px;
   font-size: 13.5px;
   line-height: 1.55;
-  color: rgba(245, 245, 247, .46);
+  color: rgba(245, 245, 247, .5);
 }
 
 /* ---------- 工艺流程 ---------- */
@@ -606,7 +604,7 @@ button { background: none; border: 0; cursor: pointer; }
   border-top: 1px solid var(--line);
   font-size: 11.5px;
   line-height: 1.7;
-  color: var(--ink-3);
+  color: var(--ink-2);
   max-width: 62em;
 }
 .foot__legal {

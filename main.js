@@ -90,7 +90,11 @@
     var target = parseFloat(el.getAttribute('data-count'));
     var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
     if (isNaN(target)) return;
-    if (reduceMotion) { el.textContent = target.toFixed(decimals); return; }
+    // 年份这类本身是标识符的数字不做计数动画（数到一半是噪音，不是信息）
+    if (el.hasAttribute('data-static') || reduceMotion) {
+      el.textContent = target.toFixed(decimals);
+      return;
+    }
 
     var dur = 1500;
     var start = null;

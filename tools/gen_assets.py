@@ -165,7 +165,12 @@ def save_webp(img, name, quality=88, fallback="png"):
     img.save(w, "WEBP", quality=quality, method=6)
     if fallback == "png":
         p = os.path.join(OUT, name + ".png")
-        img.save(p, "PNG", optimize=True)
+        # PNG 只是 webp 的回退路径：RGB 量化到 256 色（PSNR 41dB，视觉无损），
+        # alpha 通道原样保留——若连 alpha 一起量化，半透明边缘会掉到只剩几十级，出现锯齿。
+        alpha = img.getchannel("A")
+        quant = img.convert("RGB").quantize(colors=256, method=Image.FASTOCTREE).convert("RGB")
+        quant.putalpha(alpha)
+        quant.save(p, "PNG", optimize=True)
     else:
         flat = Image.new("RGB", img.size, (251, 250, 247))
         flat.paste(img, (0, 0), img)
