@@ -151,13 +151,16 @@
     });
   }
 
-  /* ---------------- 6. 询价表单 ---------------- */
+  /* ---------------- 6. 询价表单（提交到真实后端） ---------------- */
+  var API_BASE = (document.querySelector('meta[name="api-base"]') || {}).content || '';
   var form = document.getElementById('quoteForm');
   var hint = document.getElementById('quoteHint');
   if (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var contact = form.querySelector('#qContact');
+      var need = form.querySelector('#qNeed');
+      var submitBtn = form.querySelector('button[type="submit"]');
       var value = (contact.value || '').trim();
       var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
       var okPhone = /^[\d\s\-+()]{7,20}$/.test(value);
@@ -169,8 +172,39 @@
         return;
       }
       contact.removeAttribute('aria-invalid');
-      if (hint) hint.textContent = '已收到。48 小时内会有工程师与你联系，并寄出实物样品。';
-      form.reset();
+
+      var label = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中…'; }
+      if (hint) hint.textContent = '';
+
+      fetch(API_BASE + '/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact: value,
+          need: (need && need.value ? need.value : '').trim(),
+          source: 'homepage'
+        })
+      })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            return { ok: res.ok, status: res.status, data: data };
+          });
+        })
+        .then(function (r) {
+          if (!r.ok) throw new Error((r.data && r.data.error) || '提交失败（' + r.status + '）');
+          if (hint) hint.textContent = '已收到。48 小时内会有工程师与你联系，并寄出实物样品。';
+          form.reset();
+        })
+        .catch(function (err) {
+          // 网络或服务不可用时，不谎称已收到，给出可执行的替代路径
+          if (hint) {
+            hint.textContent = '提交失败：' + err.message + '。可直接致电或稍后重试，你填的内容已保留。';
+          }
+        })
+        .then(function () {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = label; }
+        });
     });
     var contactInput = form.querySelector('#qContact');
     if (contactInput) {

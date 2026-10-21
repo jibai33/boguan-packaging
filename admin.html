@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>后台 · 博冠包装</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#fbfaf7">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ============ 登录 ============ -->
+<div id="loginView" class="login">
+  <form class="login__card" id="loginForm" novalidate>
+    <div class="login__brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="login__mark">
+        <path d="M12 2.6 21.4 8v8L12 21.4 2.6 16V8L12 2.6Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M2.9 8.2 12 13.4l9.1-5.2M12 13.4v7.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>
+      <span>博冠包装</span>
+    </div>
+    <h1 class="login__title">后台管理</h1>
+    <p class="login__hint">输入管理员密码进入</p>
+
+    <label class="sr-only" for="password">管理员密码</label>
+    <input id="password" class="input" type="password" placeholder="管理员密码"
+           autocomplete="current-password" required>
+    <button class="btn btn--primary btn--block" type="submit" id="loginBtn">登录</button>
+    <p class="login__error" id="loginError" role="alert" aria-live="polite"></p>
+  </form>
+</div>
+
+<!-- ============ 主应用 ============ -->
+<div id="appView" class="app" hidden>
+  <aside class="side">
+    <div class="side__brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="side__mark">
+        <path d="M12 2.6 21.4 8v8L12 21.4 2.6 16V8L12 2.6Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M2.9 8.2 12 13.4l9.1-5.2M12 13.4v7.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <strong>博冠</strong>
+        <small>管理后台</small>
+      </div>
+    </div>
+
+    <nav class="side__nav" aria-label="后台导航">
+      <button class="nav-item is-active" data-view="overview">
+        <span class="nav-item__dot"></span>概览
+      </button>
+      <button class="nav-item" data-view="inquiries">
+        <span class="nav-item__dot"></span>询价
+        <span class="nav-item__badge" id="navBadge" hidden>0</span>
+      </button>
+      <button class="nav-item" data-view="products">
+        <span class="nav-item__dot"></span>产品
+      </button>
+    </nav>
+
+    <div class="side__foot">
+      <a href="/" target="_blank" rel="noopener" class="side__link">查看官网 ↗</a>
+      <button class="side__link" id="logoutBtn" type="button">退出登录</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- 概览 -->
+    <section class="view" id="view-overview">
+      <header class="view__head">
+        <div>
+          <h1>概览</h1>
+          <p class="view__sub" id="todayLabel"></p>
+        </div>
+        <button class="btn" id="refreshStats" type="button">刷新</button>
+      </header>
+      <div class="cards" id="statCards">
+        <div class="card"><span class="card__num">—</span><span class="card__label">加载中</span></div>
+      </div>
+      <div class="panel">
+        <h2 class="panel__title">最近询价</h2>
+        <ul class="recent" id="recentList"><li class="empty">加载中…</li></ul>
+      </div>
+    </section>
+
+    <!-- 询价 -->
+    <section class="view" id="view-inquiries" hidden>
+      <header class="view__head">
+        <div>
+          <h1>询价</h1>
+          <p class="view__sub" id="inquiryCount"></p>
+        </div>
+        <div class="filters">
+          <label class="sr-only" for="statusFilter">按状态筛选</label>
+          <select class="input input--sm" id="statusFilter">
+            <option value="">全部状态</option>
+            <option value="new">待处理</option>
+            <option value="read">已查看</option>
+            <option value="replied">已回复</option>
+            <option value="archived">已归档</option>
+          </select>
+          <button class="btn" id="refreshInquiries" type="button">刷新</button>
+        </div>
+      </header>
+
+      <div class="table-wrap">
+        <table class="table" id="inquiryTable">
+          <thead>
+            <tr>
+              <th style="width:132px">时间</th>
+              <th style="width:180px">联系方式</th>
+              <th>需求</th>
+              <th style="width:96px">状态</th>
+              <th style="width:150px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="inquiryBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="inquiryEmpty" hidden>还没有询价记录。主站提交后会实时出现在这里。</p>
+    </section>
+
+    <!-- 产品 -->
+    <section class="view" id="view-products" hidden>
+      <header class="view__head">
+        <div>
+          <h1>产品</h1>
+          <p class="view__sub">这里的条目可以对外展示，先维护好再接到官网列表</p>
+        </div>
+        <div class="filters">
+          <button class="btn btn--primary" id="newProductBtn" type="button">新增产品</button>
+        </div>
+      </header>
+
+      <div class="table-wrap">
+        <table class="table" id="productTable">
+          <thead>
+            <tr>
+              <th style="width:200px">名称</th>
+              <th style="width:110px">分类</th>
+              <th>规格</th>
+              <th style="width:100px">起订量</th>
+              <th style="width:90px">状态</th>
+              <th style="width:130px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="productBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="productEmpty" hidden>还没有产品，点「新增产品」开始。</p>
+    </section>
+  </main>
+</div>
+
+<!-- ============ 产品编辑弹窗 ============ -->
+<dialog class="modal" id="productModal">
+  <form method="dialog" class="modal__form" id="productForm">
+    <header class="modal__head">
+      <h2 id="productModalTitle">新增产品</h2>
+      <button class="modal__close" value="cancel" type="submit" aria-label="关闭">×</button>
+    </header>
+    <div class="modal__body">
+      <input type="hidden" id="pId">
+      <div class="field">
+        <label for="pName">名称 *</label>
+        <input class="input" id="pName" required maxlength="120" placeholder="五层加重水果箱">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="pCategory">分类</label>
+          <input class="input" id="pCategory" maxlength="60" placeholder="彩色瓦楞">
+        </div>
+        <div class="field">
+          <label for="pMoq">起订量</label>
+          <input class="input" id="pMoq" maxlength="60" placeholder="500 只">
+        </div>
+      </div>
+      <div class="field">
+        <label for="pSpec">规格</label>
+        <input class="input" id="pSpec" maxlength="200" placeholder="600×400×300mm，五层 AB 楞">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="pPrice">参考价</label>
+          <input class="input" id="pPrice" maxlength="60" placeholder="¥3.8 / 只">
+        </div>
+        <div class="field">
+          <label for="pLead">交期</label>
+          <input class="input" id="pLead" maxlength="60" placeholder="7–10 天">
+        </div>
+      </div>
+      <div class="field">
+        <label for="pNote">备注</label>
+        <textarea class="input" id="pNote" rows="2" maxlength="500" placeholder="可选"></textarea>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="pActive" checked> 对外可见
+      </label>
+      <p class="modal__error" id="productError" role="alert"></p>
+    </div>
+    <footer class="modal__foot">
+      <button class="btn" value="cancel" type="submit">取消</button>
+      <button class="btn btn--primary" id="saveProductBtn" type="button">保存</button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="admin.js" defer></script>
+</body>
+</html>
