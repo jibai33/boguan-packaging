@@ -26,7 +26,9 @@ import { hashPassword, verifyPassword, createTokenizer } from './auth.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');            // 项目根：data/ 与文档
-const FRONTEND = resolve(ROOT, 'frontend');  // 静态资源根：index.html / admin.html / assets
+// 静态资源根。目录取名 docs 而非 frontend，是因为 GitHub Pages 的
+// 「Deploy from a branch」只允许发布 / (root) 或 /docs 两个目录。
+const FRONTEND = resolve(ROOT, 'docs');
 
 /* ---------------- 静态文件白名单 ---------------- */
 // 只服务站点自身需要的文件，其余（package.json / server / tests / data）一律 404。

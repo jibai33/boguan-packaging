@@ -13,7 +13,7 @@
 ## 结构
 
 ```
-frontend/                  纯静态站点，可单独部署到任何静态托管
+docs/                      纯静态站点，GitHub Pages 直接发布这个目录
   index.html               官网单页（hero / 产品瓦片 / 设备 / 工艺 / 资质 / 询价 / 页脚）
   styles.css               设计系统与响应式（1440 / 1068 / 834 / 734 断点）
   main.js                  交互层：滚动揭示、数字计数、抽屉、表单、视差、搜索
@@ -29,10 +29,13 @@ backend/                   Node 零依赖服务
 
 tools/gen_assets.py        资产生成器（Pillow 程序化渲染）
 data/                      SQLite 运行时数据（不入库）
-docs/                      设计文档与视频素材（不入库）
+docs-assets/               设计文档与视频素材（不入库）
 ```
 
-服务端只把 `frontend/` 暴露出去，`backend/`、`docs/`、`data/`、`package.json` 一律 404。
+> 站点目录取名叫 `docs` 而不是 `frontend`，是因为 GitHub Pages 的
+> 「Deploy from a branch」只允许发布 `/ (root)` 或 `/docs`，无法指定其他子目录。
+
+服务端只把 `docs/` 暴露出去，`backend/`、`docs-assets/`、`data/`、`package.json` 一律 404。
 
 ## 本地预览
 
@@ -89,7 +92,7 @@ ADMIN_PASSWORD=你的密码 PORT=3000 npm start
 backend/index.js   路由、静态文件白名单、鉴权中间件、限流、Range
 backend/db.js      SQLite（node:sqlite）：inquiries / products / settings / revoked_tokens
 backend/auth.js    scrypt 存密码，HMAC-SHA256 签发 token（12 小时，登出即吊销）
-frontend/admin.*   后台：登录、概览、询价列表、产品管理
+docs/admin.*       后台：登录、概览、询价列表、产品管理
 backend/tests/     25 项集成测试，跑真实 HTTP + 真实 SQLite，不 mock
 ```
 

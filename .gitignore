@@ -5,9 +5,9 @@
 data/
 
 # 素材与生成物（体积大，按需单独管理）
-docs/设计文档/
-docs/*.mp4
-docs/*.mp3
+docs-assets/设计文档/
+docs-assets/*.mp4
+docs-assets/*.mp3
 
 # macOS
 .DS_Store
