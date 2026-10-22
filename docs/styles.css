@@ -498,6 +498,11 @@ button { background: none; border: 0; cursor: pointer; }
 }
 .factory:focus-visible { box-shadow: 0 0 0 2px var(--blue), 0 42px 84px -46px rgba(40,28,16,.5); }
 .factory__canvas {
+  /* 绝对定位铺满：父级高度由 aspect-ratio / min-height 推导，
+     此时 height:100% 在部分浏览器里解析成 auto，canvas 显示区会变成 0 高
+     （HUD 是绝对定位所以照常可见，看起来就是"纯黑方块 + 可见 HUD"）。 */
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -608,6 +613,24 @@ button { background: none; border: 0; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .factory__nav, .factory__dot, .factory__hint { transition-duration: .001ms; }
 }
+
+/* 诊断徽章：显示 drawingBuffer 尺寸与 draw call 数。
+   draws 0 说明渲染没发生；有 draws 但仍黑，则是相机/光照问题。 */
+.factory__diag {
+  position: absolute;
+  left: clamp(14px, 1.8vw, 22px);
+  top: clamp(14px, 1.8vw, 22px);
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .55);
+  color: rgba(160, 255, 190, .9);
+  font-family: var(--mono, ui-monospace, Menlo, monospace);
+  font-size: 10.5px;
+  letter-spacing: .02em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.factory__diag.is-error { color: #ff9c8a; background: rgba(70, 12, 8, .8); }
 
 /* ---------- 品牌片 ---------- */
 .film { margin-top: clamp(48px, 6vw, 84px); }

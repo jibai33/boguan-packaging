@@ -352,8 +352,8 @@ export function buildFactory(THREE) {
       label: '03 模切',
       title: '模切成型',
       desc: '刀模一次成型，模切、压痕、清废在同一道工序里完成。',
-      camPos: new THREE.Vector3(-2.4, 1.62, 1.8),
-      lookAt: new THREE.Vector3(-7.2, 1.7, 6),
+      camPos: new THREE.Vector3(-3.0, 1.62, 2.4),
+      lookAt: new THREE.Vector3(-7.0, 2.3, 6.0),
     },
     {
       id: 'stack',
@@ -519,14 +519,42 @@ export async function createTour(root) {
   }
   root.addEventListener('keydown', onKey);
 
-  /* ---- 尺寸 ---- */
+  /* ---- 尺寸：带兜底，避免首次测量为 0 导致 drawingBuffer 永远 0 ---- */
+  const diag = { w: 0, h: 0, dpr: 1, calls: 0, frames: 0, err: '' };
+
   function resize() {
-    const w = root.clientWidth;
-    const h = root.clientHeight;
-    if (!w || !h) return;
+    const rect = root.getBoundingClientRect();
+    let w = Math.round(rect.width);
+    let h = Math.round(rect.height);
+    if (!w || !h) {
+      // 元素可能还没完成布局：用父级宽度按 16:9 推一个
+      const pw = root.parentElement ? Math.round(root.parentElement.getBoundingClientRect().width) : 0;
+      w = pw || 960;
+      h = Math.round((w * 9) / 16);
+    }
+    if (w < 2 || h < 2) { w = 960; h = 540; }
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    diag.w = w;
+    diag.h = h;
+    diag.dpr = renderer.getPixelRatio();
+    paintDiag();
+  }
+
+  function paintDiag() {
+    const el = root.querySelector('[data-factory-diag]');
+    if (!el) return;
+    el.textContent = diag.err
+      ? 'ERR ' + diag.err.slice(0, 90)
+      : `${diag.w}×${diag.h} @${diag.dpr}x · draws ${diag.calls} · frames ${diag.frames}`;
+    el.classList.toggle('is-error', !!diag.err);
+  }
+
+  function fail(reason) {
+    diag.err = String(reason && reason.message ? reason.message : reason);
+    paintDiag();
+    console.error('[factory-tour]', reason);
   }
   const ro = new ResizeObserver(resize);
   ro.observe(root);
@@ -542,46 +570,54 @@ export async function createTour(root) {
   function frame(now) {
     rafId = requestAnimationFrame(frame);
     if (!running || !visible) { clockLast = now; return; }
-    const dt = Math.min((now - clockLast) / 1000, 0.05);
-    clockLast = now;
-    elapsed += dt;
+    try {
+      const dt = Math.min((now - clockLast) / 1000, 0.05);
+      clockLast = now;
+      elapsed += dt;
 
-    update(elapsed, dt);
+      update(elapsed, dt);
 
-    // 相机推进
-    if (blend < 1) {
-      moveElapsed += dt;
-      blend = Math.min(1, moveElapsed / moveDuration);
+      // 相机推进
+      if (blend < 1) {
+        moveElapsed += dt;
+        blend = Math.min(1, moveElapsed / moveDuration);
+      }
+      const e = EASE(blend);
+      const segCount = stations.length - 1;
+      const pathT = segCount > 0
+        ? Math.min(1, (fromIndex + (toIndex - fromIndex) * e) / segCount)
+        : 0;
+      path.getPointAt(pathT, camTmp);
+      if (e >= 0.999) camTmp.copy(stations[stationIndex].camPos);
+      camera.position.copy(camTmp);
+
+      // 视点插值 + 手持微抖
+      lookTmp.copy(lookFrom).lerp(lookTo, e);
+      const shake = reduceMotion ? 0 : 0.012;
+      lookTmp.x += Math.sin(elapsed * 0.9) * shake;
+      lookTmp.y += Math.cos(elapsed * 0.7) * shake * 0.6;
+
+      // 拖拽偏移叠加到朝向
+      const dir = lookTmp.clone().sub(camera.position).normalize();
+      const yawAngle = Math.atan2(dir.x, dir.z) + lookYaw;
+      const pitchAngle = Math.asin(Math.max(-1, Math.min(1, dir.y))) + lookPitch;
+      const target = new THREE.Vector3(
+        camera.position.x + Math.sin(yawAngle) * Math.cos(pitchAngle) * 10,
+        camera.position.y + Math.sin(pitchAngle) * 10,
+        camera.position.z + Math.cos(yawAngle) * Math.cos(pitchAngle) * 10,
+      );
+      camera.lookAt(target);
+
+      renderer.render(scene, camera);
+      diag.calls = renderer.info.render.calls;
+      diag.frames += 1;
+      if (diag.frames % 30 === 0) paintDiag();
+    } catch (err) {
+      // 单帧异常不能让画面停在黑屏上而无提示
+      running = false;
+      cancelAnimationFrame(rafId);
+      fail(err);
     }
-    const e = EASE(blend);
-    // 用路径采样保证走廊居中，再叠加起止点插值做兜底
-    const segCount = stations.length - 1;
-    const pathT = segCount > 0
-      ? Math.min(1, (fromIndex + (toIndex - fromIndex) * e) / segCount)
-      : 0;
-    path.getPointAt(pathT, camTmp);
-    // 站点位置精确对齐（路径点经过站点，但采样有误差，这里做一次校正）
-    if (e >= 0.999) camTmp.copy(stations[stationIndex].camPos);
-    camera.position.copy(camTmp);
-
-    // 视点插值 + 手持微抖
-    lookTmp.copy(lookFrom).lerp(lookTo, e);
-    const shake = reduceMotion ? 0 : 0.012;
-    lookTmp.x += Math.sin(elapsed * 0.9) * shake;
-    lookTmp.y += Math.cos(elapsed * 0.7) * shake * 0.6;
-
-    // 拖拽偏移叠加到朝向
-    const dir = lookTmp.clone().sub(camera.position).normalize();
-    const yawAngle = Math.atan2(dir.x, dir.z) + lookYaw;
-    const pitchAngle = Math.asin(Math.max(-1, Math.min(1, dir.y))) + lookPitch;
-    const target = new THREE.Vector3(
-      camera.position.x + Math.sin(yawAngle) * Math.cos(pitchAngle) * 10,
-      camera.position.y + Math.sin(pitchAngle) * 10,
-      camera.position.z + Math.cos(yawAngle) * Math.cos(pitchAngle) * 10,
-    );
-    camera.lookAt(target);
-
-    renderer.render(scene, camera);
   }
 
   const io = new IntersectionObserver((entries) => {
