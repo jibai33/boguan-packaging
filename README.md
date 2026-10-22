@@ -55,7 +55,7 @@ git push -u origin main
 ```
 
 推送后在仓库 **Settings → Pages** 里把 Source 设为 `Deploy from a branch`，
-分支 `main`、目录 `/ (root)`，保存后 1–2 分钟生效。
+分支 `main`、目录 **`/docs`**，保存后 1–2 分钟生效。
 
 ### 仓库再改名时
 
