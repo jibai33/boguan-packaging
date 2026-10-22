@@ -428,8 +428,23 @@ setTimeout(function () {
     import('./js/factory-tour.js')
       .then(function (mod) {
         show('module ok · 检测 WebGL…');
-        if (!mod.supportsWebGL) { degrade('模块缺少 supportsWebGL 导出'); return null; }
-        if (!mod.supportsWebGL()) { degrade('当前浏览器未启用 WebGL'); return null; }
+        var detect = mod.detectWebGL || null;
+        var report = null;
+        if (typeof detect === 'function') {
+          report = detect();
+        }
+        if (report && !report.ok) {
+          degrade('WebGL 不可用 · ' + (report.reason || '未知原因')
+            + ' [gl2:' + (report.webgl2 ? 1 : 0)
+            + ' gl:' + (report.webgl ? 1 : 0)
+            + ' exp:' + (report.experimental ? 1 : 0)
+            + ' ctor:' + (report.globalCtor ? 1 : 0) + ']');
+          return null;
+        }
+        if (!report && mod.supportsWebGL && !mod.supportsWebGL()) {
+          degrade('当前浏览器未启用 WebGL');
+          return null;
+        }
         show('creating tour…');
         return mod.createTour(root);
       })

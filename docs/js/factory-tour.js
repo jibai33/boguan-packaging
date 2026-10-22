@@ -398,13 +398,59 @@ export function buildFactory(THREE) {
 
 const EASE = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
+/**
+ * 探测 WebGL 能力，返回明细而不是单一布尔。
+ * 注意：每次尝试都用新的 canvas —— 在同一个 canvas 上先取 webgl2 失败后
+ * 再取 webgl，部分浏览器会直接返回 null，导致"明明支持却判定不支持"。
+ */
+export function detectWebGL() {
+  const report = {
+    globalCtor: false,
+    webgl2: false,
+    webgl: false,
+    experimental: false,
+    ok: false,
+    reason: '',
+  };
+  if (typeof document === 'undefined') {
+    report.reason = '无 document（非浏览器环境）';
+    return report;
+  }
+  report.globalCtor = typeof window !== 'undefined' && !!window.WebGLRenderingContext;
+
+  const tryCtx = (type) => {
+    try {
+      const c = document.createElement('canvas');
+      c.width = 1;
+      c.height = 1;
+      const gl = c.getContext(type, { failIfMajorPerformanceCaveat: false });
+      // 立刻释放，避免占用 GPU 上下文名额
+      if (gl && gl.getExtension) {
+        const lose = gl.getExtension('WEBGL_lose_context');
+        if (lose) lose.loseContext();
+      }
+      return !!gl;
+    } catch (e) {
+      report.reason = type + ' 抛错: ' + (e && e.message ? e.message : String(e));
+      return false;
+    }
+  };
+
+  report.webgl2 = tryCtx('webgl2');
+  report.webgl = tryCtx('webgl');
+  report.experimental = tryCtx('experimental-webgl');
+  report.ok = report.webgl2 || report.webgl || report.experimental;
+  if (!report.ok && !report.reason) {
+    report.reason = report.globalCtor
+      ? '三种 context 均返回 null（GPU 被禁用或被列入黑名单）'
+      : 'window.WebGLRenderingContext 不存在';
+  }
+  return report;
+}
+
 export function supportsWebGL() {
   try {
-    const canvas = document.createElement('canvas');
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
-    );
+    return detectWebGL().ok;
   } catch {
     return false;
   }
