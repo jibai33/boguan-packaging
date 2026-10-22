@@ -401,30 +401,59 @@ setTimeout(function () {
 </footer>
 
 <script src="main.js" defer></script>
-<script type="module">
-  // 工厂漫游：懒加载 three.js，失败时优雅降级（不影响页面其余部分）
-  import { createTour, supportsWebGL } from './js/factory-tour.js';
+<script>
+  // 用普通脚本 + 动态 import，而不是内联 module：
+  // 静态 import 失败时浏览器多半只在 Console 报错，页面毫无提示，
+  // 表现就是徽章永远停在"初始化…"。这里把每一步都显式写在徽章上。
+  (function () {
+    var badge = document.querySelector('[data-factory-diag]');
+    var root = document.querySelector('[data-factory]');
+    var fallback = root && root.querySelector('[data-factory-fallback]');
 
-  const root = document.querySelector('[data-factory]');
-  if (root) {
-    const fallback = root.querySelector('[data-factory-fallback]');
-    const fail = (reason) => {
-      root.classList.add('is-fallback');
-      if (fallback) fallback.hidden = false;
-      console.warn('[factory-tour] 降级：', reason);
-    };
-
-    if (!supportsWebGL()) {
-      fail('no WebGL context');
-    } else {
-      createTour(root).catch((err) => fail(err && err.message ? err.message : err));
-      // 上下文丢失（切换显卡、内存不足）时也走降级
-      root.querySelector('[data-factory-canvas]')?.addEventListener('webglcontextlost', (e) => {
-        e.preventDefault();
-        fail('webgl context lost');
-      });
+    function show(msg, isErr) {
+      if (!badge) return;
+      badge.textContent = msg;
+      badge.classList.toggle('is-error', !!isErr);
     }
-  }
+    function degrade(msg) {
+      show('ERR ' + msg, true);
+      if (root) root.classList.add('is-fallback');
+      if (fallback) fallback.hidden = false;
+      console.warn('[factory-tour]', msg);
+    }
+
+    if (!root) { show('ERR 未找到 [data-factory] 容器', true); return; }
+    show('loading module…');
+
+    import('./js/factory-tour.js')
+      .then(function (mod) {
+        show('module ok · 检测 WebGL…');
+        if (!mod.supportsWebGL) { degrade('模块缺少 supportsWebGL 导出'); return null; }
+        if (!mod.supportsWebGL()) { degrade('当前浏览器未启用 WebGL'); return null; }
+        show('creating tour…');
+        return mod.createTour(root);
+      })
+      .then(function (tour) {
+        if (!tour) return;
+        var canvas = root.querySelector('[data-factory-canvas]');
+        if (canvas) {
+          canvas.addEventListener('webglcontextlost', function (e) {
+            e.preventDefault();
+            degrade('WebGL 上下文丢失');
+          });
+        }
+      })
+      .catch(function (err) {
+        degrade((err && err.message) ? err.message : String(err));
+      });
+
+    // 兜底：8 秒后仍停在加载阶段，说明某一步静默卡住了
+    setTimeout(function () {
+      if (badge && /初始化|loading|module ok|creating/.test(badge.textContent)) {
+        show('ERR 启动超时（8s）· 见 Console', true);
+      }
+    }, 8000);
+  })();
 </script>
 </body>
 </html>
