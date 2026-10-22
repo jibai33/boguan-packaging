@@ -484,6 +484,131 @@ button { background: none; border: 0; cursor: pointer; }
   color: var(--ink-2);
 }
 
+/* ---------- 工厂漫游（three.js） ---------- */
+.factory {
+  position: relative;
+  margin-top: clamp(40px, 5vw, 72px);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #111114;
+  aspect-ratio: 16 / 9;
+  min-height: 360px;
+  box-shadow: 0 42px 84px -46px rgba(40, 28, 16, .5);
+  outline: none;
+}
+.factory:focus-visible { box-shadow: 0 0 0 2px var(--blue), 0 42px 84px -46px rgba(40,28,16,.5); }
+.factory__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.factory__canvas:active { cursor: grabbing; }
+
+.factory__hud {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: clamp(16px, 2.4vw, 30px);
+  background: linear-gradient(to top, rgba(9, 9, 11, .9) 0%, rgba(9, 9, 11, .55) 42%, rgba(9, 9, 11, 0) 100%);
+  pointer-events: none;
+}
+.factory__info { max-width: 32em; pointer-events: auto; }
+.factory__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--kraft-2);
+}
+.factory__title {
+  margin-top: 6px;
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 600;
+  letter-spacing: -.015em;
+  color: #fff;
+}
+.factory__desc {
+  margin-top: 8px;
+  font-size: clamp(13px, 1.1vw, 15px);
+  line-height: 1.55;
+  color: rgba(245, 245, 247, .72);
+}
+
+.factory__bar { display: flex; align-items: center; gap: 10px; pointer-events: auto; flex: 0 0 auto; }
+.factory__nav {
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .08);
+  color: #fff; font-size: 15px;
+  transition: background .22s var(--ease), border-color .22s var(--ease), opacity .22s var(--ease);
+}
+.factory__nav:hover:not(:disabled) { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .42); }
+.factory__nav:disabled { opacity: .26; cursor: not-allowed; }
+.factory__dots { display: flex; gap: 6px; }
+.factory__dot {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: transparent;
+  color: rgba(255, 255, 255, .55);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease);
+}
+.factory__dot:hover { color: #fff; border-color: rgba(255, 255, 255, .4); }
+.factory__dot.is-active { background: var(--kraft); border-color: var(--kraft); color: #fff; }
+
+.factory__hint {
+  position: absolute;
+  top: clamp(14px, 1.8vw, 22px);
+  right: clamp(14px, 1.8vw, 22px);
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: rgba(255, 255, 255, .42);
+  pointer-events: none;
+  transition: opacity .45s var(--ease);
+}
+.factory.is-interacted .factory__hint { opacity: 0; }
+
+.factory__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 28px;
+  text-align: center;
+  background: #111114;
+  color: rgba(245, 245, 247, .7);
+  font-size: 14px;
+}
+.factory__fallback[hidden] { display: none; }
+.factory__fallback-sub { font-size: 12.5px; color: rgba(245, 245, 247, .45); }
+.factory.is-fallback .factory__canvas { display: none; }
+.factory.is-fallback .factory__hud,
+.factory.is-fallback .factory__hint { display: none; }
+
+@media (max-width: 834px) {
+  .factory { aspect-ratio: 4 / 3; }
+}
+@media (max-width: 734px) {
+  .factory { min-height: 300px; border-radius: var(--r-md); }
+  .factory__hud { flex-direction: column; align-items: stretch; gap: 14px; }
+  .factory__bar { justify-content: space-between; }
+  .factory__hint { display: none; }
+  .factory__desc { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .factory__nav, .factory__dot, .factory__hint { transition-duration: .001ms; }
+}
+
 /* ---------- 品牌片 ---------- */
 .film { margin-top: clamp(48px, 6vw, 84px); }
 .film__frame {

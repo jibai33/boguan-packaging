@@ -37,9 +37,12 @@ const PUBLIC_FILES = new Set([
   '/favicon.ico', '/robots.txt', '/site.webmanifest', '/.nojekyll',
 ]);
 const ASSET_RE = /^\/assets\/(?:[\w.-]+\/)?[\w.-]+\.(webp|png|jpe?g|gif|ico|svg|mp4|webm)$/i;
+// 前端模块与本地化的第三方库（three.js 等）。只允许这两个目录下的 js/css，
+// 不含 backend/tests/data——白名单仍是按目录收敛的。
+const MODULE_RE = /^\/(?:js|vendor)\/[\w.-]+\.(?:js|mjs|css)$/i;
 
 function isPublicPath(pathname) {
-  return PUBLIC_FILES.has(pathname) || ASSET_RE.test(pathname);
+  return PUBLIC_FILES.has(pathname) || ASSET_RE.test(pathname) || MODULE_RE.test(pathname);
 }
 
 const MIME = {

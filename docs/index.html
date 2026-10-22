@@ -251,6 +251,35 @@ setTimeout(function () {
         </li>
       </ol>
 
+      <div class="factory reveal" data-factory tabindex="0" role="region" aria-label="工厂三维漫游">
+        <canvas class="factory__canvas" data-factory-canvas aria-label="工厂内部三维视图，可拖动转头"></canvas>
+
+        <div class="factory__hud">
+          <div class="factory__info">
+            <span class="factory__label" data-factory-label>01 纸卷</span>
+            <h3 class="factory__title" data-factory-title>纸卷区</h3>
+            <p class="factory__desc" data-factory-desc>原纸与瓦楞纸板在这里上机。三层、五层、七层，按承重配纸。</p>
+          </div>
+          <div class="factory__bar">
+            <button class="factory__nav" data-factory-prev type="button" aria-label="上一站">←</button>
+            <div class="factory__dots" aria-label="工位切换">
+              <button class="factory__dot is-active" data-factory-dot type="button" aria-label="纸卷区">01</button>
+              <button class="factory__dot" data-factory-dot type="button" aria-label="印刷">02</button>
+              <button class="factory__dot" data-factory-dot type="button" aria-label="模切">03</button>
+              <button class="factory__dot" data-factory-dot type="button" aria-label="码垛">04</button>
+            </div>
+            <button class="factory__nav" data-factory-next type="button" aria-label="下一站">→</button>
+          </div>
+        </div>
+
+        <div class="factory__hint">拖动画面可转头 · ← → 切换工位</div>
+
+        <div class="factory__fallback" data-factory-fallback hidden>
+          <p>当前环境不支持 WebGL，三维漫游无法加载。</p>
+          <p class="factory__fallback-sub">下方的品牌片可以看到同样的工序。</p>
+        </div>
+      </div>
+
       <figure class="film reveal">
         <div class="film__frame">
           <video class="film__video" controls playsinline preload="none"
@@ -371,5 +400,30 @@ setTimeout(function () {
 </footer>
 
 <script src="main.js" defer></script>
+<script type="module">
+  // 工厂漫游：懒加载 three.js，失败时优雅降级（不影响页面其余部分）
+  import { createTour, supportsWebGL } from './js/factory-tour.js';
+
+  const root = document.querySelector('[data-factory]');
+  if (root) {
+    const fallback = root.querySelector('[data-factory-fallback]');
+    const fail = (reason) => {
+      root.classList.add('is-fallback');
+      if (fallback) fallback.hidden = false;
+      console.warn('[factory-tour] 降级：', reason);
+    };
+
+    if (!supportsWebGL()) {
+      fail('no WebGL context');
+    } else {
+      createTour(root).catch((err) => fail(err && err.message ? err.message : err));
+      // 上下文丢失（切换显卡、内存不足）时也走降级
+      root.querySelector('[data-factory-canvas]')?.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        fail('webgl context lost');
+      });
+    }
+  }
+</script>
 </body>
 </html>
