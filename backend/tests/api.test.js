@@ -251,14 +251,14 @@ test('JS/CSS 返回 no-cache 且支持 ETag 304', async () => {
   assert.match(img.headers.get('cache-control') || '', /max-age=\d+/);
 });
 
-/* ---------------- 视频分段传输（回归：无 Range 时 31MB 视频无法拖动进度条） ---------------- */
+/* ---------------- 视频分段传输（回归：无 Range 时大体积视频无法拖动进度条） ---------------- */
 test('视频资源支持 Range 请求并返回 206', async () => {
-  const head = await fetch(`${base}/assets/video/brand-720.mp4`, { method: 'HEAD' });
+  const head = await fetch(`${base}/assets/video/brand-1080.mp4`, { method: 'HEAD' });
   assert.equal(head.status, 200);
   assert.equal(head.headers.get('accept-ranges'), 'bytes');
   assert.equal(head.headers.get('content-type'), 'video/mp4');
 
-  const part = await fetch(`${base}/assets/video/brand-720.mp4`, {
+  const part = await fetch(`${base}/assets/video/brand-1080.mp4`, {
     headers: { Range: 'bytes=0-1023' },
   });
   assert.equal(part.status, 206, '应返回 206 Partial Content');
@@ -268,7 +268,7 @@ test('视频资源支持 Range 请求并返回 206', async () => {
 });
 
 test('越界的 Range 返回 416', async () => {
-  const res = await fetch(`${base}/assets/video/brand-720.mp4`, {
+  const res = await fetch(`${base}/assets/video/brand-1080.mp4`, {
     headers: { Range: 'bytes=99999999999-' },
   });
   assert.equal(res.status, 416);

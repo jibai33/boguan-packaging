@@ -358,7 +358,7 @@ export async function createApp(options = {}) {
 
       const contentType = MIME[ext] || 'application/octet-stream';
 
-      // Range 支持：没有它，31MB 的视频无法拖动进度条，每次 seek 都要重下整段。
+      // Range 支持：没有它，十几 MB 的视频无法拖动进度条，每次 seek 都要重下整段。
       const range = req.headers.range;
       if (range) {
         const m = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
